@@ -6,6 +6,8 @@ def main():
     env = gaden2.EnvironmentModelPlane()
     env_visualisation = gaden2.RvizEnvironmentVisualisationPlane(visualisation_base, env)
     
+    wind = gaden2.FarrellsWindModel(env)
+    
     print('Creating simulator...')
     sim = gaden2.Simulator()
     print('Creating TDLAS sensor...')

@@ -22,22 +22,24 @@ std::string toString(const FarrellsWindModelConfiguration &config, size_t indent
 }
 
 FarrellsWindModel::FarrellsWindModel(const std::shared_ptr<EnvironmentModel> &environment_model,
-                                     rl::Logger &parent_logger)
+                                     double grid_cell_size,
+                                     double u0, double v0,
+                                     double kx, double ky,
+                                     double noise_gain, double noise_damp, double noise_bandwidth,
+                                     rl::Logger parent_logger)
     : WindModel(parent_logger)
     , environment_min_(environment_model->getEnvironmentMin())
 {
-    // load configuration
-    //YAML::Node wind_config = yaml_config["wind"]["farrell_wind"];
+    // set configuration
+    double grid_target_size = grid_cell_size;
 
-    double grid_target_size = 1;//wind_config["grid_target_size"].as<double>();
-
-//    config_.u0 = wind_config["u0"].as<double>();
-//    config_.v0 = wind_config["v0"].as<double>();
-//    config_.k_x = wind_config["k_x"].as<double>();
-//    config_.k_y = wind_config["k_y"].as<double>();
-//    config_.noise_gain = wind_config["noise_gain"].as<double>();
-//    config_.noise_damp = wind_config["noise_damp"].as<double>();
-//    config_.noise_bandwidth = wind_config["noise_bandwidth"].as<double>();
+    config_.u0 = u0;
+    config_.v0 = v0;
+    config_.k_x = kx;
+    config_.k_y = ky;
+    config_.noise_gain = noise_gain;
+    config_.noise_damp = noise_damp;
+    config_.noise_bandwidth = noise_bandwidth;
 
     logger.info() << "Farrell's wind model configuration:\n    " << toString(config_, 4);
 

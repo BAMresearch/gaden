@@ -1,6 +1,7 @@
 #ifndef GADEN2_WIND_MODEL_FARRELL_HPP_INCLUDED
 #define GADEN2_WIND_MODEL_FARRELL_HPP_INCLUDED
 
+#include "logger.hpp"
 #include "wind_model.hpp"
 
 #include <Eigen/Core>
@@ -29,8 +30,26 @@ std::string toString(const FarrellsWindModelConfiguration &config, size_t indent
 class FarrellsWindModel : public WindModel
 {
 public:
+    // define default variables, so that pybind11 can also use them
+    static constexpr double DEFAULT_GRID_CELL_SIZE = 5.0;   // [m] recommended range: [5, 10]
+    static constexpr double DEFAULT_U0 = 1.0;               // [m/s] mean wind velocity in x-direction
+    static constexpr double DEFAULT_V0 = 0.0;               // [m/s] mean wind velocity in y-direction
+    static constexpr double DEFAULT_KX = 10.0;              // [m2/s] diffusivity term in x-direction, recommended range: [1, 30]
+    static constexpr double DEFAULT_KY = 10.0;              // [m2/s] diffusivity term in y-direction, recommended range: [1, 30]
+    static constexpr double DEFAULT_NOISE_GAIN = 2.0;       // [] Input gain constant for boundary condition noise generation.
+    static constexpr double DEFAULT_NOISE_DAMP = 0.1;       // [] Damping ratio for boundary condition noise generation.
+    static constexpr double DEFAULT_NOISE_BANDWIDTH = 0.2;  // [] Bandwidth for boundary condition noise generation.
+
     FarrellsWindModel(const std::shared_ptr<EnvironmentModel> &environment_model,
-                      rl::Logger &parent_logger);
+                      double grid_cell_size = DEFAULT_GRID_CELL_SIZE, // [m] recommended range: [5, 10]
+                      double u0 = DEFAULT_U0, // [m/s] mean wind velocity in x-direction
+                      double v0 = DEFAULT_V0, // [m/s] mean wind velocity in y-direction
+                      double kx = DEFAULT_KX, // [m2/s] diffusivity term in x-direction, recommended range: [1, 30]
+                      double ky = DEFAULT_KY, // [m2/s] diffusivity term in y-direction, recommended range: [1, 30]
+                      double noise_gain = DEFAULT_NOISE_GAIN, // [] Input gain constant for boundary condition noise generation.
+                      double noise_damp = DEFAULT_NOISE_DAMP, // [] Damping ratio for boundary condition noise generation.
+                      double noise_bandwidth = DEFAULT_NOISE_BANDWIDTH, // [] Bandwidth for boundary condition noise generation.
+                      rl::Logger parent_logger = getStandardLogger());
     ~FarrellsWindModel();
 
     virtual void increment(double time_step, double total_sim_time);
