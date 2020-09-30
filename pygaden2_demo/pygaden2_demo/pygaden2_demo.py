@@ -6,6 +6,12 @@ def main():
     env = gaden2.EnvironmentModelPlane()
     env_visualisation = gaden2.RvizEnvironmentVisualisationPlane(visualisation_base, env)
     
+    gas_src1 = gaden2.FilamentGasSource([0,0,0], 10, 10, 10)
+    gas_src2 = gaden2.FilamentGasSource([10,0,1], 10, 10, 10)
+    gas_sources = [gas_src1, gas_src2]
+    
+    gas_src_visualisation =gaden2.RvizGasSourceVisualisation(visualisation_base, gas_sources)
+    
     wind = gaden2.FarrellsWindModel(env)
     
     print('Creating simulator...')

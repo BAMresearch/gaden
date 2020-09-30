@@ -2,12 +2,19 @@
 
 namespace gaden2 {
 
-EnvironmentModelPlane::EnvironmentModelPlane(double x_min, double x_max, double y_min, double y_max, rl::Logger parent_logger)
+static constexpr double z_min = -1.0;
+
+EnvironmentModelPlane::EnvironmentModelPlane(double x_min,
+                                             double x_max,
+                                             double y_min,
+                                             double y_max,
+                                             double z_max,
+                                             rl::Logger parent_logger)
     : EnvironmentModel(parent_logger)
-    , world_min_(x_min, y_min, -1)
-    , world_max_(x_max, y_max, 0)
-    //, x_min_(x_min), x_max_(x_max)
-    //, y_min_(y_min), y_max_(y_max)
+    , world_min_(x_min, y_min, z_min)
+    , world_max_(x_max, y_max, z_max)
+    , plane_min_(world_min_)
+    , plane_max_(x_max, y_max, 0)
 {
     logger.info() << "Created plane environment model.";
 }
@@ -25,14 +32,24 @@ Eigen::Vector3d EnvironmentModelPlane::getEnvironmentMax() const
     return world_max_;
 }
 
-Eigen::Vector3d EnvironmentModelPlane::getCenterCoordinates() const
+Occupancy EnvironmentModelPlane::getOccupancy(const Eigen::Vector3d &p) const
 {
-    return 0.5 * (world_min_ + world_max_);
+    if ((p.array() < world_min_.array()).any() || (p.array() > world_max_.array()).any())
+        return Occupancy::OutOfWorld;
+    else if ((p.array() >= plane_min_.array()).any() && (p.array() <= plane_max_.array()).any())
+        return Occupancy::Occupied;
+    else
+        return Occupancy::Free;
 }
 
-Eigen::Vector3d EnvironmentModelPlane::getDimensions() const
+Eigen::Vector3d EnvironmentModelPlane::getPlaneCenterCoordinates() const
 {
-    return world_max_ - world_min_;
+    return 0.5 * (plane_min_ + plane_max_);
+}
+
+Eigen::Vector3d EnvironmentModelPlane::getPlaneDimensions() const
+{
+    return plane_max_ - plane_min_;
 }
 
 } // namespace gaden2

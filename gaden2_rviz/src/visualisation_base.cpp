@@ -4,7 +4,8 @@
 
 namespace gaden2::rviz {
 
-VisualisationBase::VisualisationBase(const std::string &node_name)
+VisualisationBase::VisualisationBase(const std::string &node_name,
+                                     const std::string &static_markers_topic_name)
 {
     if (!rclcpp::ok())
     {
@@ -13,6 +14,8 @@ VisualisationBase::VisualisationBase(const std::string &node_name)
 
     node_ = std::make_shared<rclcpp::Node>(node_name);
     node_clock_ = node_->get_clock();
+
+    publisher_static_markers_ = node_->create_publisher<visualization_msgs::msg::Marker>(static_markers_topic_name, 10);
 
     thread_ros_spin_ = std::thread(&VisualisationBase::spinRosNode, this);
 

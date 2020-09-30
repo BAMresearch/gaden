@@ -22,6 +22,9 @@ find_package(gaden2_eigen REQUIRED)
 
 add_library(gaden2
   src/environment_model_plane.cpp
+  src/filament_model.cpp
+  src/gas_source.cpp
+  src/gas_source_filament_model.cpp
   src/logger.cpp
   src/simulator.cpp
   src/wind_model_farrell.cpp
