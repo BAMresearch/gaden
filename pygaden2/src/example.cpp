@@ -9,6 +9,7 @@
 #include <gaden2/gas_source.hpp>
 #include <gaden2/gas_source_filament_model.hpp>
 #include <gaden2/gases.hpp>
+#include <gaden2/simulation_element.hpp>
 #include <gaden2/simulator.hpp>
 #include <gaden2/wind_model_farrell.hpp>
 #include <gaden2/sensors/open_path.hpp>
@@ -28,12 +29,28 @@ PYBIND11_MODULE(pygaden2, m)
 
     m.def("add", &add, "A function which adds two numbers");
 
+    pybind11::class_<gaden2::SimulationElement, std::shared_ptr<gaden2::SimulationElement>>(m, "SimulationElement")
+            .def("startRecord", &gaden2::SimulationElement::startRecord);
+
     /** ========================= ENVIRONMENT MODELS ========================= **/
 
-    pybind11::class_<gaden2::EnvironmentModel, std::shared_ptr<gaden2::EnvironmentModel>>(m, "EnvironmentModel");
+    pybind11::class_<gaden2::EnvironmentModel, gaden2::SimulationElement, std::shared_ptr<gaden2::EnvironmentModel>>(m, "EnvironmentModel");
 
     pybind11::class_<gaden2::EnvironmentModelPlane, gaden2::EnvironmentModel, std::shared_ptr<gaden2::EnvironmentModelPlane>>(m, "EnvironmentModelPlane")
-            .def(pybind11::init<>());
+            .def(pybind11::init<
+                    double, // x_min
+                    double, // x_max
+                    double, // y_min
+                    double, // y_max
+                    double  // z_max
+                 >(),
+                 pybind11::arg("x_min") = gaden2::EnvironmentModelPlane::DEFAULT_X_MIN,
+                 pybind11::arg("x_max") = gaden2::EnvironmentModelPlane::DEFAULT_X_MAX,
+                 pybind11::arg("y_min") = gaden2::EnvironmentModelPlane::DEFAULT_Y_MIN,
+                 pybind11::arg("y_max") = gaden2::EnvironmentModelPlane::DEFAULT_Y_MAX,
+                 pybind11::arg("z_max") = gaden2::EnvironmentModelPlane::DEFAULT_Z_MAX)
+            .def(pybind11::init<const std::string &>(),
+                 pybind11::arg("file"));
 
     /** ========================= WIND MODELS ========================= **/
 

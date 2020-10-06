@@ -26,6 +26,7 @@ HEADERS += \
     $$PWD/include/gaden2/helpers/interpolation.hpp \
     $$PWD/include/gaden2/logger.hpp \
     $$PWD/include/gaden2/sensors/open_path.hpp \
+    $$PWD/include/gaden2/simulation_element.hpp \
     $$PWD/include/gaden2/simulator.hpp \
     $$PWD/include/gaden2/wind_model.hpp \
     $$PWD/include/gaden2/wind_model_farrell.hpp \

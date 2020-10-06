@@ -18,6 +18,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rl_logging REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(gaden2_eigen REQUIRED)
 
 add_library(gaden2
@@ -39,6 +40,7 @@ ament_target_dependencies(gaden2
 
 target_link_libraries(gaden2
   rl_logging
+  yaml-cpp
 )
 
 set_property(TARGET gaden2 PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -51,6 +53,7 @@ target_include_directories(gaden2 PUBLIC
 ament_export_dependencies(
   gaden2_eigen
   rl_logging
+  yaml-cpp
 )
 
 ament_export_targets(export_gaden2 HAS_LIBRARY_TARGET)

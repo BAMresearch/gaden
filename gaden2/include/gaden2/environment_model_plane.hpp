@@ -6,6 +6,8 @@
 
 #include <Eigen/Core>
 
+#include <string>
+
 namespace gaden2 {
 
 class EnvironmentModelPlane : public EnvironmentModel
@@ -17,14 +19,20 @@ public:
     static constexpr double DEFAULT_Y_MAX = 25.0;
     static constexpr double DEFAULT_Z_MAX = 50.0;
 
-    // TODO Adjust Python export
     EnvironmentModelPlane(double x_min = DEFAULT_X_MIN,
                           double x_max = DEFAULT_X_MAX,
                           double y_min = DEFAULT_Y_MIN,
                           double y_max = DEFAULT_Y_MAX,
                           double z_max = DEFAULT_Z_MAX,
                           rl::Logger parent_logger = getStandardLogger());
+
+    EnvironmentModelPlane(const std::string &file,
+                          rl::Logger parent_logger = getStandardLogger());
+
     ~EnvironmentModelPlane();
+
+    void startRecord(const std::string &file);
+    void stopRecord();
 
     Eigen::Vector3d getEnvironmentMin() const;
     Eigen::Vector3d getEnvironmentMax() const;
