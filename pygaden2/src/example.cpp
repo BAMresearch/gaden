@@ -17,6 +17,7 @@
 #include <gaden2_rviz/environment_visualisation_plane.hpp>
 #include <gaden2_rviz/gas_source_visualisation.hpp>
 #include <gaden2_rviz/visualisation_base.hpp>
+#include <gaden2_rviz/wind2d_visualisation.hpp>
 
 int add(int i, int j)
 {
@@ -30,6 +31,7 @@ PYBIND11_MODULE(pygaden2, m)
     m.def("add", &add, "A function which adds two numbers");
 
     pybind11::class_<gaden2::SimulationElement, std::shared_ptr<gaden2::SimulationElement>>(m, "SimulationElement")
+            .def("increment", &gaden2::SimulationElement::increment)
             .def("startRecord", &gaden2::SimulationElement::startRecord);
 
     /** ========================= ENVIRONMENT MODELS ========================= **/
@@ -54,7 +56,9 @@ PYBIND11_MODULE(pygaden2, m)
 
     /** ========================= WIND MODELS ========================= **/
 
-    pybind11::class_<gaden2::FarrellsWindModel, std::shared_ptr<gaden2::FarrellsWindModel>>(m, "FarrellsWindModel")
+    pybind11::class_<gaden2::WindModel, gaden2::SimulationElement, std::shared_ptr<gaden2::WindModel>>(m, "WindModel");
+
+    pybind11::class_<gaden2::FarrellsWindModel, gaden2::WindModel, std::shared_ptr<gaden2::FarrellsWindModel>>(m, "FarrellsWindModel")
             .def(pybind11::init<
                     const std::shared_ptr<gaden2::EnvironmentModel> &,
                     double, // grid_cell_size
@@ -134,7 +138,12 @@ PYBIND11_MODULE(pygaden2, m)
     /** ========================= VISUALISATION ========================= **/
 
     pybind11::class_<gaden2::rviz::VisualisationBase, std::shared_ptr<gaden2::rviz::VisualisationBase>>(m, "RvizVisualisationBase")
-            .def(pybind11::init<const std::string &>());
+            .def(pybind11::init<
+                    const std::string &, // node_name
+                    const std::string & // static_markers_topic_name
+                 >(),
+                 pybind11::arg("node_name"),
+                 pybind11::arg("static_markers_topic_name") = gaden2::rviz::VisualisationBase::DEFAULT_STATIC_MARKERS_TOPIC_NAME);
 
     pybind11::class_<gaden2::rviz::EnvironmentVisualisationPlane>(m, "RvizEnvironmentVisualisationPlane")
             .def(pybind11::init<
@@ -153,6 +162,25 @@ PYBIND11_MODULE(pygaden2, m)
                  pybind11::arg("marker_namespace") = gaden2::rviz::EnvironmentVisualisationPlane::DEFAULT_MARKER_NAMESPACE,
                  pybind11::arg("marker_id") = gaden2::rviz::EnvironmentVisualisationPlane::DEFAULT_MARKER_ID,
                  pybind11::arg("marker_frame_id") = gaden2::rviz::EnvironmentVisualisationPlane::DEFAULT_MARKER_FRAME_ID);
+
+    pybind11::class_<gaden2::rviz::Wind2dVisualisation>(m, "RvizWind2dVisualisation")
+            .def(pybind11::init<
+                    std::shared_ptr<gaden2::rviz::VisualisationBase>,
+                    std::shared_ptr<gaden2::WindModel>,
+                    double, // resolution = DEFAULT_RESOLUTION, // [m], place a wind arrow each ... m
+                    double, // z = DEFAULT_Z, // [m], altitude that is visualised
+                    const std::string &, // topic_name = DEFAULT_TOPIC_NAME,
+                    const std::string &, // marker_namespace = DEFAULT_MARKER_NAMESPACE,
+                    const std::string & // marker_frame_id
+                 >(),
+                 pybind11::arg("visualisation_base"),
+                 pybind11::arg("wind_model"),
+                 pybind11::arg("resolution") = gaden2::rviz::Wind2dVisualisation::DEFAULT_RESOLUTION,
+                 pybind11::arg("z") = gaden2::rviz::Wind2dVisualisation::DEFAULT_Z,
+                 pybind11::arg("topic_name") = gaden2::rviz::Wind2dVisualisation::DEFAULT_TOPIC_NAME,
+                 pybind11::arg("marker_namespace") = gaden2::rviz::Wind2dVisualisation::DEFAULT_MARKER_NAMESPACE,
+                 pybind11::arg("marker_frame_id") = gaden2::rviz::Wind2dVisualisation::DEFAULT_MARKER_FRAME_ID)
+            .def("publish", &gaden2::rviz::Wind2dVisualisation::publish);
 
     pybind11::class_<gaden2::rviz::GasSourceVisualisation>(m, "RvizGasSourceVisualisation")
             .def(pybind11::init<

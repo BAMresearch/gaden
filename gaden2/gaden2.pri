@@ -9,6 +9,7 @@ SOURCES += \
     $$PWD/src/helpers/interpolation.cpp \
     $$PWD/src/logger.cpp \
     $$PWD/src/sensors/open_path.cpp \
+    $$PWD/src/simulation_element.cpp \
     $$PWD/src/simulator.cpp \
     $$PWD/src/wind_model_farrell.cpp \
     $$PWD/src/wind_model_farrell_noise.cpp

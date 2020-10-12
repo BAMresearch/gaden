@@ -52,11 +52,17 @@ public:
                       rl::Logger parent_logger = getStandardLogger());
     ~FarrellsWindModel();
 
-    virtual void increment(double time_step, double total_sim_time);
+    void startRecord(const std::string &file);
+    void stopRecord();
 
     Eigen::Vector3d getWindVelocityAt(const Eigen::Vector3d &position);
 
+    Eigen::Vector3d getEnvironmentMin() const;
+    Eigen::Vector3d getEnvironmentMax() const;
+
 private:
+    void performIncrement(double time_step, double total_sim_time);
+
     void applyBoundaryConditions(double dt);
     std::tuple<Eigen::ArrayXXd, Eigen::ArrayXXd> getCentred1stDifferences(const Eigen::ArrayXXd &f);
     std::tuple<Eigen::ArrayXXd, Eigen::ArrayXXd> getCentred2ndDifferences(const Eigen::ArrayXXd &f);
@@ -65,6 +71,7 @@ private:
     std::unique_ptr<FarrellColouredNoiseGenerator> noise_generator_;
 
     Eigen::Vector3d environment_min_;
+    Eigen::Vector3d environment_max_;
 
     double dx_, dy_; // grid point spacing in x/y direction
     Eigen::Array3d delta_grid; // (dx, dy, dz), dz has no meaning

@@ -27,6 +27,7 @@ add_library(gaden2
   src/gas_source.cpp
   src/gas_source_filament_model.cpp
   src/logger.cpp
+  src/simulation_element.cpp
   src/simulator.cpp
   src/wind_model_farrell.cpp
   src/wind_model_farrell_noise.cpp

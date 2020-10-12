@@ -19,18 +19,18 @@ public:
 
     virtual ~EnvironmentModel() {}
 
-    virtual inline void increment(double time_step, double total_sim_time)
-    {
-        (void)time_step;
-        (void)total_sim_time;
-    }
-
     virtual Eigen::Vector3d getEnvironmentMin() const = 0;
     virtual Eigen::Vector3d getEnvironmentMax() const = 0;
 
     virtual Occupancy getOccupancy(const Eigen::Vector3d &p) const = 0;
 
 protected:
+    virtual void performIncrement(double time_step, double total_sim_time)
+    {
+        (void)time_step;
+        (void)total_sim_time;
+    }
+
     rl::Logger logger;
 };
 

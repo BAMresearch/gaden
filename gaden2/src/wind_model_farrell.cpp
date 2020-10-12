@@ -7,6 +7,8 @@
 #include <gaden2/wind_model_farrell_noise.hpp>
 #include <gaden2/helpers/interpolation.hpp>
 
+#include <iostream> // TODO remove
+
 namespace gaden2 {
 
 std::string toString(const FarrellsWindModelConfiguration &config, size_t indention)
@@ -29,6 +31,7 @@ FarrellsWindModel::FarrellsWindModel(const std::shared_ptr<EnvironmentModel> &en
                                      rl::Logger parent_logger)
     : WindModel(parent_logger)
     , environment_min_(environment_model->getEnvironmentMin())
+    , environment_max_(environment_model->getEnvironmentMax())
 {
     // set configuration
     double grid_target_size = grid_cell_size;
@@ -49,7 +52,7 @@ FarrellsWindModel::FarrellsWindModel(const std::shared_ptr<EnvironmentModel> &en
                                                                        config_.noise_gain);
 
     // compute grid node spacing
-    Eigen::Vector3d environment_size = environment_model->getEnvironmentMax() - environment_min_;
+    Eigen::Vector3d environment_size = environment_max_ - environment_min_;
     logger.info() << "Environment size: x=" << environment_size[0] << " y=" << environment_size[1];
     logger.info() << "Grid target size: " << grid_target_size;
 
@@ -85,7 +88,7 @@ FarrellsWindModel::FarrellsWindModel(const std::shared_ptr<EnvironmentModel> &en
 FarrellsWindModel::~FarrellsWindModel()
 {}
 
-void FarrellsWindModel::increment(double time_step, double total_sim_time)
+void FarrellsWindModel::performIncrement(double time_step, double total_sim_time)
 {
     (void)total_sim_time;
 
@@ -118,6 +121,16 @@ void FarrellsWindModel::increment(double time_step, double total_sim_time)
     // perform update with Euler integration
     u_inner += du_dt * time_step;
     v_inner += dv_dt * time_step;
+}
+
+void FarrellsWindModel::startRecord(const std::string &file)
+{
+    //
+}
+
+void FarrellsWindModel::stopRecord()
+{
+    //
 }
 
 void FarrellsWindModel::applyBoundaryConditions(double dt)
@@ -167,6 +180,8 @@ std::tuple<Eigen::ArrayXXd, Eigen::ArrayXXd> FarrellsWindModel::getCentred2ndDif
 
 Eigen::Vector3d FarrellsWindModel::getWindVelocityAt(const Eigen::Vector3d &position)
 {
+    // TODO Assert position is in valid range
+
     // Create a view to the inner part and the 'last' edge.
     // The 'last' edge is only needed for the special case
     // that 'position' lies on the boundary,
@@ -200,6 +215,16 @@ Eigen::Vector3d FarrellsWindModel::getWindVelocityAt(const Eigen::Vector3d &posi
     double v_p = interpolateBilinear(p, P11, P22, v11, v12, v21, v22);
 
     return Eigen::Vector3d(u_p, v_p, 0);
+}
+
+Eigen::Vector3d FarrellsWindModel::getEnvironmentMin() const
+{
+    return environment_min_;
+}
+
+Eigen::Vector3d FarrellsWindModel::getEnvironmentMax() const
+{
+    return environment_max_;
 }
 
 } // namespace gaden2
