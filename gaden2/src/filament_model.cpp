@@ -9,25 +9,21 @@
 
 namespace gaden2 {
 
-FilamentGasModel::FilamentGasModel(std::vector<std::shared_ptr<GasSourceFilamentModel> > gas_sources,
+FilamentGasModel::FilamentGasModel(std::shared_ptr<EnvironmentModel> environment_model,
+                                   std::shared_ptr<WindModel> wind_model,
+                                   std::vector<std::shared_ptr<GasSourceFilamentModel>> gas_sources,
+                                   double filament_noise_std,
+                                   double filament_growth_gamma,
                                    std::shared_ptr<gases::GasBase> environment_gas,
                                    rl::Logger parent_logger)
     : GasDispersionModel(parent_logger)
+    , environment_model_(environment_model)
+    , wind_model_(wind_model)
     , gas_sources_(gas_sources)
+    , filament_growth_gamma_(filament_growth_gamma)
 {
     if (gas_sources_.empty())
         throw std::runtime_error("At least one gas source required");
-
-    double filament_spawn_radius = 1.0; // [m]
-        // radius around the source in which the filaments are spawned
-
-    filament_initial_radius_ = 0.1; // [m], R(0) in Farrell's paper
-    filament_growth_gamma_ = 0.01; // [m2/s]
-        // gamma that controls the rate of growth in Farrell's paper
-
-    double filament_noise_std = 0.1; // [m]
-        // Sigma of the white noise added to the filament's position
-        // on each iteration
 
     environment_gas_dynamic_viscosity_ = environment_gas->getDynamicViscosity();
 
@@ -38,20 +34,32 @@ FilamentGasModel::FilamentGasModel(std::vector<std::shared_ptr<GasSourceFilament
                      {
                         return gas_source->getGas()->getMassDensity() == gas_mass_density;
                      }))
-        throw std::runtime_error("Currently, all gas source must emit gas with the same mass density");
+    {
+        throw std::runtime_error("Currently, all gas sources must emit gas with the same mass density");
+    }
 
+    // TODO Make the mass density depend on temperature (assuming pressure is always 1 atm?)
     gas_density_delta_ = environment_gas->getMassDensity() - gas_mass_density; // [kg/m3]
 
     // Create random distributions
-    filament_spawn_distribution_ = std::normal_distribution<double>(0, filament_spawn_radius / 3.0);
-        // Set standard deviation to spawn_radius/3, such that 99.73%
-        // of all filaments will spawn within that radius
     filament_stochastic_movement_distribution_ = std::normal_distribution<double>(0, filament_noise_std);
 }
 
-void FilamentGasModel::increment(double time_step, double total_sim_time)
+void FilamentGasModel::startRecord(const std::string &file)
 {
-    (void)total_sim_time;
+    //
+}
+
+void FilamentGasModel::stopRecord()
+{
+    //
+}
+
+void FilamentGasModel::performIncrement(double time_step, double total_sim_time)
+{
+    environment_model_->increment(time_step, total_sim_time);
+    wind_model_->increment(time_step, total_sim_time);
+
     addNewFilaments(time_step);
     updateFilamentPositions(time_step);
 }
@@ -71,24 +79,37 @@ double FilamentGasModel::getConcentrationAt(const Eigen::Vector3d &position)
     return ideal_gas::getMolarFractionAtNormalConditions(concentration) * 1e6;
 }
 
+const std::list<Filament> & FilamentGasModel::getFilaments() const
+{
+    return filaments_;
+}
+
 void FilamentGasModel::addNewFilaments(double time_step)
 {
     for (const std::shared_ptr<GasSourceFilamentModel> &gas_source : gas_sources_)
     {
-        // TODO Make sure that the number of filaments is met for a period of several seconds?
-        unsigned num_filaments = time_step * gas_source->getNumFilamentsPerSecond();
+        double filaments_to_release = time_step * gas_source->num_filaments_per_second_;
+        unsigned num_filaments = filaments_to_release;
+
+        // Make sure that the right amount of filaments is released in the long term
+        gas_source->num_filaments_release_fraction_ += filaments_to_release - num_filaments;
+        if (gas_source->num_filaments_release_fraction_ >= 1.0)
+        {
+            ++num_filaments;
+            gas_source->num_filaments_release_fraction_ -= 1.0;
+        }
 
         for (unsigned i = 0; i < num_filaments; ++i)
         {
             // Set position of new filament within the specified radius around the gas source location
             Eigen::Vector3d vec_random = Eigen::Vector3d::NullaryExpr([&]() {
-                return filament_spawn_distribution_(random_engine_); });
+                return gas_source->filament_spawn_distribution_(random_engine_); });
 
             Eigen::Vector3d filament_position = gas_source->getPosition() + vec_random;
 
             filaments_.emplace_back(filament_position,
-                                    filament_initial_radius_,
-                                    gas_source->getMolPerFilament());
+                                    gas_source->filament_initial_radius_,
+                                    gas_source->mol_per_filament_);
         }
     }
 }
@@ -97,7 +118,7 @@ void FilamentGasModel::updateFilamentPositions(double time_step)
 {
     for (auto it = filaments_.begin(); it != filaments_.end();)
     {
-        if (updateFilamentPosition(*it, time_step) == UpdatePositionResult::FilamentVanished)
+        if (updateFilamentPosition(*it, time_step) == UpdatePositionResult::RemoveFilament)
             it = filaments_.erase(it);
         else
             ++it;
@@ -118,10 +139,12 @@ FilamentGasModel::updateFilamentPosition(Filament &filament, double time_step)
     // 1. Simulate Advection (Va)
     // Large scale wind-eddies -> Movement of a filament as a whole by wind
     // --------------------------------------------------------------------
-    new_position = filament.position + time_step * wind_model_->getWindVelocityAt(filament.position);
+    const Eigen::Vector3d &wind_velocity = wind_model_->getWindVelocityAt(filament.position);
+    //logger.info() << "Wind: " << wind_velocity(0) << ", " << wind_velocity(1) << ", " << wind_velocity(2);
+    new_position = filament.position + time_step * wind_velocity;
 
-    if (testAndSetPosition(filament.position, new_position) == UpdatePositionResult::FilamentVanished)
-        return UpdatePositionResult::FilamentVanished;
+    if (testAndSetPosition(filament.position, new_position) == UpdatePositionResult::RemoveFilament)
+        return UpdatePositionResult::RemoveFilament;
 
     // 2. Simulate Gravity & Bouyant Force
     // -----------------------------------
@@ -157,8 +180,8 @@ FilamentGasModel::updateFilamentPosition(Filament &filament, double time_step)
 
     new_position = filament.position + terminal_buoyancy_velocity * time_step;
 
-    if (testAndSetPosition(filament.position, new_position) == UpdatePositionResult::FilamentVanished)
-        return UpdatePositionResult::FilamentVanished;
+    if (testAndSetPosition(filament.position, new_position) == UpdatePositionResult::RemoveFilament)
+        return UpdatePositionResult::RemoveFilament;
 
     // 3. Add some variability (stochastic process)
     // Vm (middle scale wind)-> Movement of the filament with respect to the
@@ -167,10 +190,10 @@ FilamentGasModel::updateFilamentPosition(Filament &filament, double time_step)
     Eigen::Vector3d vec_random = Eigen::Vector3d::NullaryExpr([&]() {
         return filament_stochastic_movement_distribution_(random_engine_); });
 
-    new_position = filament.position + vec_random;
+    new_position = filament.position + time_step * vec_random;
 
-    if (testAndSetPosition(filament.position, new_position) == UpdatePositionResult::FilamentVanished)
-        return UpdatePositionResult::FilamentVanished;
+    if (testAndSetPosition(filament.position, new_position) == UpdatePositionResult::RemoveFilament)
+        return UpdatePositionResult::RemoveFilament;
 
     // 4. Filament growth with time (this affects the posterior estimation of
     //                               gas concentration at each cell)
@@ -178,10 +201,10 @@ FilamentGasModel::updateFilamentPosition(Filament &filament, double time_step)
     //                                  shape (growth with time)
     // R = sigma of a 3D gaussian --> Increasing sigma with time
     // ------------------------------------------------------------------------
-    double radius_squared_delta = filament_growth_gamma_ * time_step; // m2/s * s = m2
+    double radius_squared_delta = filament_growth_gamma_ * time_step; // [m2/s] * [s] = [m2]
     filament.addToSquaredRadius(radius_squared_delta);
 
-    return UpdatePositionResult::Okay;
+    return UpdatePositionResult::KeepFilament;
 }
 
 FilamentGasModel::UpdatePositionResult
@@ -192,15 +215,14 @@ FilamentGasModel::testAndSetPosition(Eigen::Vector3d &position, const Eigen::Vec
     case Occupancy::Free:
         // Free and valid location... update filament position
         position = candidate;
-        return UpdatePositionResult::Okay;
+        return UpdatePositionResult::KeepFilament;
     case Occupancy::Outlet:
     case Occupancy::OutOfWorld:
         // The location corresponds to an outlet! Delete filament!
-        //logger.info() << "Filament reached outlet at " << toString(candidate);
-        return UpdatePositionResult::FilamentVanished;
+        return UpdatePositionResult::RemoveFilament;
     default:
         // The location falls in an obstacle --> illegal movement, do not apply it
-        return UpdatePositionResult::Okay;
+        return UpdatePositionResult::KeepFilament;
     }
 }
 

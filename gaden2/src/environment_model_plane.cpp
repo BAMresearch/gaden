@@ -129,7 +129,7 @@ Occupancy EnvironmentModelPlane::getOccupancy(const Eigen::Vector3d &p) const
 {
     if ((p.array() < world_min_.array()).any() || (p.array() > world_max_.array()).any())
         return Occupancy::OutOfWorld;
-    else if ((p.array() >= plane_min_.array()).any() && (p.array() <= plane_max_.array()).any())
+    else if ((p.array() >= plane_min_.array()).all() && (p.array() <= plane_max_.array()).all())
         return Occupancy::Occupied;
     else
         return Occupancy::Free;

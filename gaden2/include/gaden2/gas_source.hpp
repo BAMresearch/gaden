@@ -16,7 +16,7 @@ class GasSource
 public:
     GasSource(Eigen::Vector3d position,
               std::shared_ptr<gases::GasBase> gas,
-              double release_rate);
+              double release_rate); // [kg/h]
 
     virtual ~GasSource() {}
 
@@ -24,8 +24,8 @@ public:
     inline const std::shared_ptr<gases::GasBase> & getGas() const { return gas_; }
     inline double getReleaseRate() const { return release_rate_; }
 
-private:
-    Eigen::Vector3d position_;
+protected:
+    Eigen::Vector3d position_; // [m, m, m]
     std::shared_ptr<gases::GasBase> gas_;
     double release_rate_; // [kg/h]
 

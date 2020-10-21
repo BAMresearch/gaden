@@ -1,3 +1,5 @@
+import time
+
 import gaden2
 
 def main():
@@ -6,20 +8,47 @@ def main():
     env = gaden2.EnvironmentModelPlane()
     env_visualisation = gaden2.RvizEnvironmentVisualisationPlane(visualisation_base, env)
     
-    gas_src1 = gaden2.FilamentGasSource([0,0,0], 10, 10, 10)
-    gas_src2 = gaden2.FilamentGasSource([10,0,1], 10, 10, 10)
-    gas_sources = [gas_src1, gas_src2]
+    methane = gaden2.Methane()
+    gas_src1 = gaden2.FilamentGasSource(position = [-45,0,1],
+                                        gas = methane,
+                                        release_rate = 10, # [kg/h]
+                                        filament_spawn_radius = 0.0)
+    gas_src2 = gaden2.FilamentGasSource(position = [0,10,3],
+                                        gas = methane,
+                                        release_rate = 10, # [kg/h]
+                                        filament_spawn_radius = 0.0)
+    gas_sources = [gas_src1]
+    gas_src_visualisation = gaden2.RvizGasSourceVisualisation(visualisation_base, gas_sources)
     
-    gas_src_visualisation =gaden2.RvizGasSourceVisualisation(visualisation_base, gas_sources)
+    wind = gaden2.FarrellsWindModel(env,
+                                    noise_gain = 2.0,
+                                    noise_damp = 0.1,#900004,
+                                    noise_bandwidth = 0.2)
+    wind_visualisation = gaden2.RvizWind2dVisualisation(visualisation_base,
+                                                        wind,
+                                                        resolution = 2.0)
     
-    wind = gaden2.FarrellsWindModel(env)
+    gas_model = gaden2.FilamentModel(env,
+                                     wind,
+                                     gas_sources,
+                                     filament_noise_std = 0.1)
+    gas_model_visualisation = gaden2.RvizFilamentVisualisation(visualisation_base, gas_model)
     
     print('Creating simulator...')
-    sim = gaden2.Simulator()
-    print('Creating TDLAS sensor...')
-    tdlas = gaden2.OpenPathSensor(sim)
-    print('Done')
-    input("Press Enter to continue...")
+    dt = 0.2
+    sim = gaden2.Simulator(gas_model, dt = dt)
+    
+    try:
+        while True:
+            sim.increment()
+            #time.sleep(dt/4)
+    except KeyboardInterrupt:
+        print('Catched Ctrl+C. Will end.')
+    
+    #print('Creating TDLAS sensor...')
+    #tdlas = gaden2.OpenPathSensor(sim)
+    #print('Done')
+    #input("Press Enter to continue...")
 
 if __name__ == '__main__':
     main()

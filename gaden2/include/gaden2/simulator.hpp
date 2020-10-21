@@ -8,14 +8,14 @@
 
 namespace gaden2 {
 
-class GasDispersionModel;
+class SimulationElement;
 
 class Simulator
 {
 public:
     static constexpr double DEFAULT_DT = -1.0;
 
-    Simulator(std::shared_ptr<GasDispersionModel> dispersion_model,
+    Simulator(std::shared_ptr<SimulationElement> simulation_element,
               double dt = DEFAULT_DT, // dt <= 0 --> dt must be passed to each call of increment
               rl::Logger logger = getStandardLogger());
 
@@ -49,7 +49,7 @@ private:
     double dt_;
     double t_sim_;
 
-    std::shared_ptr<GasDispersionModel> dispersion_model_;
+    std::shared_ptr<SimulationElement> simulation_element_;
     bool recording_;
 };
 

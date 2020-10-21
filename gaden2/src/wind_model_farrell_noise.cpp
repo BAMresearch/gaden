@@ -1,3 +1,7 @@
+// This is a C++ port of the Python code from the
+// Insect Robotics Group, University of Edinburgh
+// Available at: https://github.com/InsectRobotics/pompy
+
 #include <gaden2/wind_model_farrell_noise.hpp>
 
 namespace gaden2 {

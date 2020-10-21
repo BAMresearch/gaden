@@ -1,18 +1,18 @@
-#include <gaden2/gas_dispersion_model.hpp>
+#include <gaden2/simulation_element.hpp>
 #include <gaden2/simulator.hpp>
 
 #include <stdexcept>
 
 namespace gaden2 {
 
-Simulator::Simulator(std::shared_ptr<GasDispersionModel> dispersion_model,
+Simulator::Simulator(std::shared_ptr<SimulationElement> simulation_element,
                      double dt,
                      rl::Logger logger)
     : logger_(logger)
     , mode_(Mode::Simulate)
     , dt_(dt)
     , t_sim_(0.0)
-    , dispersion_model_(dispersion_model)
+    , simulation_element_(simulation_element)
 {
     logger_.info("Created simulator");
 }
@@ -81,7 +81,7 @@ void Simulator::performSimulationIncrement(double dt)
 {
     // caller must make sure that dt > 0
     t_sim_ += dt;
-    dispersion_model_->increment(dt, t_sim_);
+    simulation_element_->increment(dt, t_sim_);
 }
 
 } // namespace gaden2

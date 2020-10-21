@@ -15,6 +15,7 @@
 #include <gaden2/sensors/open_path.hpp>
 
 #include <gaden2_rviz/environment_visualisation_plane.hpp>
+#include <gaden2_rviz/filament_visualisation.hpp>
 #include <gaden2_rviz/gas_source_visualisation.hpp>
 #include <gaden2_rviz/visualisation_base.hpp>
 #include <gaden2_rviz/wind2d_visualisation.hpp>
@@ -98,37 +99,50 @@ PYBIND11_MODULE(pygaden2, m)
             .def(pybind11::init<
                     Eigen::Vector3d,   // position
                     std::shared_ptr<gaden2::gases::GasBase>, // gas
-                    double,            // release_rate
-                    unsigned,          // num_filaments_per_second
-                    double             // mol_per_filament
+                    double,     // release_rate, [kg/h]
+                    unsigned,   // num_filaments_per_second, [1/s]
+                    double,     // filament_initial_radius, [m], R(0) in Farrell's paper
+                    double      // filament_spawn_radius
                  >(),
                  pybind11::arg("position"),
                  pybind11::arg("gas"),
                  pybind11::arg("release_rate"),
-                 pybind11::arg("num_filaments_per_second"),
-                 pybind11::arg("mol_per_filament"));
+                 pybind11::arg("num_filaments_per_second") = gaden2::GasSourceFilamentModel::DEFAULT_NUM_FILAMENTS_PER_SECOND,
+                 pybind11::arg("filament_initial_radius") = gaden2::GasSourceFilamentModel::DEFAULT_FILAMENT_INITIAL_RADIUS,
+                 pybind11::arg("filament_spawn_radius") = gaden2::GasSourceFilamentModel::DEFAULT_FILAMENT_SPAWN_RADIUS);
 
     /** ========================= GAS DISPERSION MODELS ========================= **/
 
-    pybind11::class_<gaden2::GasDispersionModel, std::shared_ptr<gaden2::GasDispersionModel>>(m, "GasDispersionModel");
+    pybind11::class_<gaden2::GasDispersionModel, gaden2::SimulationElement, std::shared_ptr<gaden2::GasDispersionModel>>(m, "GasDispersionModel");
 
     pybind11::class_<gaden2::FilamentGasModel, gaden2::GasDispersionModel, std::shared_ptr<gaden2::FilamentGasModel>>(m, "FilamentModel")
             .def(pybind11::init<
+                    std::shared_ptr<gaden2::EnvironmentModel>,
+                    std::shared_ptr<gaden2::WindModel>,
                     std::vector<std::shared_ptr<gaden2::GasSourceFilamentModel>>, // gas_sources
+                    double, // filament_noise_std
+                    double, // filament_growth_gamma
                     std::shared_ptr<gaden2::gases::GasBase> // environment_gas
                  >(),
+                 pybind11::arg("environment_model"),
+                 pybind11::arg("wind_model"),
                  pybind11::arg("gas_sources"),
+                 pybind11::arg("filament_noise_std") = gaden2::FilamentGasModel::DEFAULT_FILAMENT_NOISE_STD,
+                 pybind11::arg("filament_growth_gamma") = gaden2::FilamentGasModel::DEFAULT_FILAMENT_GROWTH_GAMMA,
                  pybind11::arg("environment_gas") = gaden2::FilamentGasModel::getDefaultEnvironmentGas());
 
     /** ========================= SIMULATOR ========================= **/
 
     pybind11::class_<gaden2::Simulator, std::shared_ptr<gaden2::Simulator>>(m, "Simulator")
             .def(pybind11::init<
-                    std::shared_ptr<gaden2::GasDispersionModel>, // dispersion_model
+                    std::shared_ptr<gaden2::SimulationElement>,
                     double // dt
                  >(),
-                 pybind11::arg("dispersion_model"),
-                 pybind11::arg("dt") = gaden2::Simulator::DEFAULT_DT);
+                 pybind11::arg("simulation_element"),
+                 pybind11::arg("dt") = gaden2::Simulator::DEFAULT_DT)
+            .def("increment", pybind11::overload_cast<double>(&gaden2::Simulator::increment), "Increments the simulation by dt.",
+                 pybind11::arg("dt"))
+            .def("increment", pybind11::overload_cast<>(&gaden2::Simulator::increment), "Increments the simulation by the dt given to its constructor, returns that dt.");
 
     /** ========================= SENSORS ========================= **/
 
@@ -197,4 +211,26 @@ PYBIND11_MODULE(pygaden2, m)
                  pybind11::arg("marker_namespace") = gaden2::rviz::GasSourceVisualisation::DEFAULT_MARKER_NAMESPACE,
                  pybind11::arg("marker_id") = gaden2::rviz::GasSourceVisualisation::DEFAULT_MARKER_ID,
                  pybind11::arg("marker_frame_id") = gaden2::rviz::GasSourceVisualisation::DEFAULT_MARKER_FRAME_ID);
+
+    pybind11::class_<gaden2::rviz::FilamentVisualisation>(m, "RvizFilamentVisualisation")
+            .def(pybind11::init<
+                    std::shared_ptr<gaden2::rviz::VisualisationBase>,
+                    std::shared_ptr<gaden2::FilamentGasModel>,
+                    double, // marker_scale
+                    const std::string &, // topic_name
+                    const std::string &, // marker_namespace
+                    const std::string &  // marker_frame_id
+                 >(),
+                 pybind11::arg("visualisation_base"),
+                 pybind11::arg("filament_model"),
+                 pybind11::arg("marker_scale") = gaden2::rviz::FilamentVisualisation::DEFAULT_MARKER_SCALE,
+                 pybind11::arg("topic_name") = gaden2::rviz::FilamentVisualisation::DEFAULT_TOPIC_NAME,
+                 pybind11::arg("marker_namespace") = gaden2::rviz::FilamentVisualisation::DEFAULT_MARKER_NAMESPACE,
+                 pybind11::arg("marker_frame_id") = gaden2::rviz::FilamentVisualisation::DEFAULT_MARKER_FRAME_ID);
 }
+
+
+
+
+
+

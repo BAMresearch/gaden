@@ -23,6 +23,7 @@ find_package(visualization_msgs REQUIRED)
 
 add_library(gaden2_rviz
   src/environment_visualisation_plane.cpp
+  src/filament_visualisation.cpp
   src/gas_source_visualisation.cpp
   src/visualisation_base.cpp
   src/wind2d_visualisation.cpp

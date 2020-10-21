@@ -19,17 +19,13 @@ Wind2dVisualisation::Wind2dVisualisation(std::shared_ptr<VisualisationBase> visu
     , resolution_(resolution)
     , z_(z)
 {
-    publisher_ = visualisation_base_->getNode()->create_publisher<visualization_msgs::msg::MarkerArray>(topic_name, 5);
-
-    callback_id_ = wind_model_->addPostIncrementCallback([this]() { publish(); });
-
     x_min_ = wind_model_->getEnvironmentMin()(0);
     y_min_ = wind_model_->getEnvironmentMin()(1);
 
     x_max_ = wind_model_->getEnvironmentMax()(0);
     y_max_ = wind_model_->getEnvironmentMax()(1);
 
-    auto marker_color = ros_type_conversion::getColor(0, 0, 1);
+    auto marker_color = ros_type_conversion::colors::blue;
 
     visualization_msgs::msg::Marker marker;
     marker.header.frame_id = marker_frame_id;
@@ -50,7 +46,10 @@ Wind2dVisualisation::Wind2dVisualisation(std::shared_ptr<VisualisationBase> visu
         marker_array_.markers.push_back(marker);
     });
 
+    publisher_ = visualisation_base_->getNode()->create_publisher<visualization_msgs::msg::MarkerArray>(topic_name, 5);
     publish();
+
+    callback_id_ = wind_model_->addPostIncrementCallback([this]() { publish(); });
 }
 
 Wind2dVisualisation::~Wind2dVisualisation()

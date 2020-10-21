@@ -49,7 +49,8 @@ FarrellsWindModel::FarrellsWindModel(const std::shared_ptr<EnvironmentModel> &en
     noise_generator_ = std::make_unique<FarrellColouredNoiseGenerator>(Eigen::Matrix2Xd::Zero(2, 8),
                                                                        config_.noise_damp,
                                                                        config_.noise_bandwidth,
-                                                                       config_.noise_gain);
+                                                                       config_.noise_gain,
+                                                                       true);
 
     // compute grid node spacing
     Eigen::Vector3d environment_size = environment_max_ - environment_min_;
@@ -91,6 +92,7 @@ FarrellsWindModel::~FarrellsWindModel()
 void FarrellsWindModel::performIncrement(double time_step, double total_sim_time)
 {
     (void)total_sim_time;
+    logger.info() << "Wind update " << time_step << ", " << total_sim_time;
 
     // update boundary values
     applyBoundaryConditions(time_step);

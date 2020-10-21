@@ -1,5 +1,7 @@
 #include <gaden2_rviz/helpers/ros_type_conversions.hpp>
 
+#include <stdexcept>
+
 namespace gaden2::rviz::ros_type_conversion {
 
 geometry_msgs::msg::Vector3 getVector3(double x, double y, double z)
@@ -49,5 +51,19 @@ std_msgs::msg::ColorRGBA getColor(float r, float g, float b, float a)
     c.a = a;
     return c;
 }
+
+namespace colors {
+
+extern const std_msgs::msg::ColorRGBA black = getColor(0,0,0);
+extern const std_msgs::msg::ColorRGBA white = getColor(1,1,1);
+extern const std_msgs::msg::ColorRGBA grey = getColor(0.5, 0.5, 0.5);
+extern const std_msgs::msg::ColorRGBA red = getColor(1,0,0);
+extern const std_msgs::msg::ColorRGBA green = getColor(0,1,0);
+extern const std_msgs::msg::ColorRGBA blue = getColor(0,0,1);
+extern const std_msgs::msg::ColorRGBA yellow = getColor(1,1,0);
+extern const std_msgs::msg::ColorRGBA orange = getColor(1.0, 0.5, 0.0);
+extern const std_msgs::msg::ColorRGBA violet = getColor(0.5, 0.0, 1.0);
+
+} // namespace colors
 
 } // namespace gaden2::rviz::ros_type_conversion
